@@ -3,8 +3,12 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 DROP TABLE IF EXISTS
     public.users,
     public.issues,
-    public.labels
+    public.issue_links,
+    public.labels,
+    public.label_links
     CASCADE;
+
+DROP TYPE IF EXISTS public.issue_link_type_enum;
 
 CREATE TABLE public.users (
     id               UUID PRIMARY KEY DEFAULT uuid_generate_v4() NOT NULL,
@@ -42,6 +46,29 @@ CREATE INDEX public_issues_created_by_index         ON public.issues (created_by
 CREATE INDEX public_issues_last_updated_by_at_index ON public.issues (last_updated_by);
 CREATE INDEX public_issues_created_at_index         ON public.issues (created_at);
 CREATE INDEX public_issues_updated_at_index         ON public.issues (updated_at);
+
+CREATE TYPE public.issue_link_type_enum AS ENUM (
+    'BLOCKS',
+    'IS_BLOCKED_BY'
+);
+
+CREATE TABLE public.issue_links (
+    id                            UUID PRIMARY KEY DEFAULT uuid_generate_v4() NOT NULL,
+    source_issue_id               UUID NOT NULL,
+    target_issue_id               UUID NOT NULL,
+    link_type                     issue_link_type_enum DEFAULT NULL,
+
+    created_by                    UUID DEFAULT NULL,
+    created_at                    TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+
+    CONSTRAINT fk_source_issue_id FOREIGN KEY (source_issue_id) REFERENCES public.issues (id) ON DELETE CASCADE,
+    CONSTRAINT fk_target_issue_id FOREIGN KEY (target_issue_id) REFERENCES public.issues (id) ON DELETE CASCADE,
+    CONSTRAINT fk_created_by      FOREIGN KEY (created_by)      REFERENCES public.users  (id) ON DELETE SET NULL
+);
+CREATE INDEX public_issue_links_source_issue_id_index ON public.issue_links (source_issue_id);
+CREATE INDEX public_issue_links_target_issue_id_index ON public.issue_links (target_issue_id);
+CREATE INDEX public_issue_links_created_by_index      ON public.issue_links (created_by);
+CREATE INDEX public_issue_links_created_at_index      ON public.issue_links (created_at);
 
 CREATE TABLE public.labels (
     id                             UUID PRIMARY KEY DEFAULT uuid_generate_v4() NOT NULL,
