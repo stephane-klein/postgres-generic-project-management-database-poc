@@ -3,6 +3,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 DROP TABLE IF EXISTS
     public.users,
     public.issues,
+    public.issue_hill_charts,
     public.issue_links,
     public.labels,
     public.label_links
@@ -46,6 +47,21 @@ CREATE INDEX public_issues_created_by_index         ON public.issues (created_by
 CREATE INDEX public_issues_last_updated_by_at_index ON public.issues (last_updated_by);
 CREATE INDEX public_issues_created_at_index         ON public.issues (created_at);
 CREATE INDEX public_issues_updated_at_index         ON public.issues (updated_at);
+
+-- from https://basecamp.com/shapeup/3.4-chapter-13
+CREATE TABLE issue_hill_charts (
+    id                             UUID PRIMARY KEY DEFAULT uuid_generate_v4() NOT NULL,
+    issue_id                       UUID NOT NULL,
+    position                       INTEGER DEFAULT NULL, -- between 0 to 100
+
+    created_by                     UUID DEFAULT NULL,
+    created_at                     TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+    CONSTRAINT fk_issue_id         FOREIGN KEY (issue_id)   REFERENCES public.issues (id) ON DELETE CASCADE,
+    CONSTRAINT fk_created_by       FOREIGN KEY (created_by) REFERENCES public.users  (id) ON DELETE SET NULL
+);
+CREATE INDEX public_issue_hill_charts_issue_id_index    ON public.issue_hill_charts (issue_id);
+CREATE INDEX public_issue_hill_charts_created_by_index  ON public.issue_hill_charts (created_by);
+CREATE INDEX public_issue_hill_charts_created_at_index  ON public.issue_hill_charts (created_at);
 
 CREATE TYPE public.issue_link_type_enum AS ENUM (
     'BLOCKS',
